@@ -94,6 +94,8 @@ pub struct CalendarView<T: TimeZone, L: Locale> {
 
     earliest_date: Option<Date<T>>,
     latest_date: Option<Date<T>>,
+    available_dates: Option<Vec<Date<T>>>,
+
     date: Date<T>,
     on_submit: Option<DateCallback<T>>,
     on_select: Option<DateCallback<T>>,
@@ -115,6 +117,7 @@ impl<T: TimeZone, L: Locale + 'static> CalendarView<T, L> {
             date: today.clone(),
             earliest_date: None,
             latest_date: None,
+            available_dates: None,
             view_mode: ViewMode::Month,
             view_date: today,
             size: (0, 0).into(),
@@ -303,6 +306,31 @@ impl<T: TimeZone, L: Locale + 'static> CalendarView<T, L> {
     /// [`WeekDay`](struct.WeekDay.html).
     pub fn set_week_start(&mut self, day: WeekDay) {
         self.week_start = day;
+    }
+
+    /// Sets and limits the dates selectable by this view.
+    pub fn set_available_dates(&mut self, dates: Option<Vec<Date<T>>>) {
+        self.available_dates = dates;
+
+        for date in self.available_dates.iter().flat_map(|v| v.iter()) {
+            if let Some(ref earliest) = self.earliest_date {
+            if *date < *earliest {
+                self.earliest_date = Some(date.clone());
+            }
+            }
+            if let Some(ref latest) = self.latest_date {
+            if *date > *latest {
+                self.latest_date = Some(date.clone());
+            }
+            }
+        }
+    }
+
+    /// Sets and limits the dates selectable by this view.
+    ///
+    /// Chainable variant.
+    pub fn available_dates(self, dates: Option<Vec<Date<T>>>) -> Self {
+        self.with(|v| v.set_available_dates(dates))
     }
 
     /// Allows to change the default week start day of `WeekDay::Monday` to any other
@@ -570,6 +598,18 @@ impl<T: TimeZone, L: Locale + 'static> CalendarView<T, L> {
     }
 
     fn date_available(&self, date: &Date<T>) -> bool {
+
+        let mut flag = false;
+        for date in self.available_dates.iter().flat_map(|v| v.iter()) {
+            if *date == *date {
+                flag = true;
+            }
+        }
+
+        if !flag {
+            return false;
+        }
+        
         if let Some(ref earliest) = self.earliest_date {
             if *date < *earliest {
                 return false;
