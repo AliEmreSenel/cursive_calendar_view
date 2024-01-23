@@ -18,7 +18,6 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 
 // External Dependencies ------------------------------------------------------
-use chrono::offset::TimeZone;
 use chrono::prelude::*;
 
 use crate::cursive::direction::Direction;
@@ -53,7 +52,7 @@ pub enum ViewMode {
 /// A callback taking a date as parameter.
 ///
 /// This is an internal type used to improve readability.
-type DateCallback<T> = Rc<dyn Fn(&mut Cursive, &Date<T>)>;
+type DateCallback = Rc<dyn Fn(&mut Cursive, &NaiveDate)>;
 
 /// View for selecting a date, supporting different modes for day, month or
 /// year based selection.
@@ -81,7 +80,7 @@ type DateCallback<T> = Rc<dyn Fn(&mut Cursive, &Date<T>)>;
 /// calendar.set_show_iso_weeks(true);
 /// # }
 /// ```
-pub struct CalendarView<T: TimeZone, L: Locale> {
+pub struct CalendarView<L: Locale> {
     enabled: bool,
     show_iso_weeks: bool,
     week_start: WeekDay,
@@ -90,24 +89,24 @@ pub struct CalendarView<T: TimeZone, L: Locale> {
     lowest_view_mode: ViewMode,
 
     view_mode: ViewMode,
-    view_date: Date<T>,
+    view_date: NaiveDate,
 
-    earliest_date: Option<Date<T>>,
-    latest_date: Option<Date<T>>,
-    available_dates: Option<Vec<Date<T>>>,
 
-    date: Date<T>,
-    on_submit: Option<DateCallback<T>>,
-    on_select: Option<DateCallback<T>>,
+    earliest_date: Option<NaiveDate>,
+    latest_date: Option<NaiveDate>,
+    available_dates: Option<Vec<NaiveDate>>,
+    date: NaiveDate,
+    on_submit: Option<DateCallback>,
+    on_select: Option<DateCallback>,
 
     size: Vec2,
 
     _localization: PhantomData<L>,
 }
 
-impl<T: TimeZone, L: Locale + 'static> CalendarView<T, L> {
+impl<L: Locale + 'static> CalendarView<L> {
     /// Creates new `CalendarView`.
-    pub fn new(today: Date<T>) -> Self {
+    pub fn new(today: NaiveDate) -> Self {
         Self {
             enabled: true,
             highest_view_mode: ViewMode::Decade,
@@ -150,12 +149,12 @@ impl<T: TimeZone, L: Locale + 'static> CalendarView<T, L> {
     }
 
     /// Returns the currently selected date of this view.
-    pub fn date(&self) -> Date<T> {
+    pub fn date(&self) -> NaiveDate {
         self.date.clone()
     }
 
     /// Sets the currently selected date of this view.
-    pub fn set_selected_date(&mut self, mut date: Date<T>) {
+    pub fn set_selected_date(&mut self, mut date: NaiveDate) {
         if let Some(ref earliest) = self.earliest_date {
             if date < *earliest {
                 date = earliest.clone();
@@ -174,12 +173,12 @@ impl<T: TimeZone, L: Locale + 'static> CalendarView<T, L> {
     /// Sets the currently selected date of this view.
     ///
     /// Chainable variant.
-    pub fn selected_date(self, date: Date<T>) -> Self {
+    pub fn selected_date(self, date: NaiveDate) -> Self {
         self.with(|v| v.set_selected_date(date))
     }
 
     /// Sets the visually selected date of this view.
-    pub fn set_view_date(&mut self, mut date: Date<T>) {
+    pub fn set_view_date(&mut self, mut date: NaiveDate) {
         if let Some(ref earliest) = self.earliest_date {
             if date < *earliest {
                 date = earliest.clone();
@@ -198,7 +197,7 @@ impl<T: TimeZone, L: Locale + 'static> CalendarView<T, L> {
     /// Sets the visually selected date of this view.
     ///
     /// Chainable variant.
-    pub fn view_date(self, date: Date<T>) -> Self {
+    pub fn view_date(self, date: NaiveDate) -> Self {
         self.with(|v| v.set_view_date(date))
     }
 
@@ -267,7 +266,7 @@ impl<T: TimeZone, L: Locale + 'static> CalendarView<T, L> {
     }
 
     /// Sets and limits the earliest date selectable by this view.
-    pub fn set_earliest_date(&mut self, date: Option<Date<T>>) {
+    pub fn set_earliest_date(&mut self, date: Option<NaiveDate>) {
         self.earliest_date = date;
 
         if let Some(ref date) = self.earliest_date {
@@ -280,12 +279,12 @@ impl<T: TimeZone, L: Locale + 'static> CalendarView<T, L> {
     /// Sets and limits the earliest date selectable by this view.
     ///
     /// Chainable variant.
-    pub fn earliest_date(self, date: Option<Date<T>>) -> Self {
+    pub fn earliest_date(self, date: Option<NaiveDate>) -> Self {
         self.with(|v| v.set_earliest_date(date))
     }
 
     /// Sets and limits the latest date selectable by this view.
-    pub fn set_latest_date(&mut self, date: Option<Date<T>>) {
+    pub fn set_latest_date(&mut self, date: Option<NaiveDate>) {
         self.latest_date = date;
 
         if let Some(ref date) = self.latest_date {
@@ -298,7 +297,7 @@ impl<T: TimeZone, L: Locale + 'static> CalendarView<T, L> {
     /// Sets and limits the latest date selectable by this view.
     ///
     /// Chainable variant.
-    pub fn latest_date(self, date: Option<Date<T>>) -> Self {
+    pub fn latest_date(self, date: Option<NaiveDate>) -> Self {
         self.with(|v| v.set_latest_date(date))
     }
 
@@ -309,7 +308,7 @@ impl<T: TimeZone, L: Locale + 'static> CalendarView<T, L> {
     }
 
     /// Sets and limits the dates selectable by this view.
-    pub fn set_available_dates(&mut self, dates: Option<Vec<Date<T>>>) {
+    pub fn set_available_dates(&mut self, dates: Option<Vec<NaiveDate>>) {
         self.available_dates = dates;
 
         for date in self.available_dates.iter().flat_map(|v| v.iter()) {
@@ -329,7 +328,7 @@ impl<T: TimeZone, L: Locale + 'static> CalendarView<T, L> {
     /// Sets and limits the dates selectable by this view.
     ///
     /// Chainable variant.
-    pub fn available_dates(self, dates: Option<Vec<Date<T>>>) -> Self {
+    pub fn available_dates(self, dates: Option<Vec<NaiveDate>>) -> Self {
         self.with(|v| v.set_available_dates(dates))
     }
 
@@ -360,7 +359,7 @@ impl<T: TimeZone, L: Locale + 'static> CalendarView<T, L> {
     /// Sets a callback to be used when `<Enter>` is pressed to select a date.
     pub fn set_on_submit<F>(&mut self, cb: F)
     where
-        F: Fn(&mut Cursive, &Date<T>) + 'static,
+        F: Fn(&mut Cursive, &NaiveDate) + 'static,
     {
         self.on_submit = Some(Rc::new(move |s, date| cb(s, date)));
     }
@@ -370,7 +369,7 @@ impl<T: TimeZone, L: Locale + 'static> CalendarView<T, L> {
     /// Chainable variant.
     pub fn on_submit<F>(self, cb: F) -> Self
     where
-        F: Fn(&mut Cursive, &Date<T>) + 'static,
+        F: Fn(&mut Cursive, &NaiveDate) + 'static,
     {
         self.with(|v| v.set_on_submit(cb))
     }
@@ -378,7 +377,7 @@ impl<T: TimeZone, L: Locale + 'static> CalendarView<T, L> {
     /// Sets a callback to be used when an a new date is visually selected.
     pub fn set_on_select<F>(&mut self, cb: F)
     where
-        F: Fn(&mut Cursive, &Date<T>) + 'static,
+        F: Fn(&mut Cursive, &NaiveDate) + 'static,
     {
         self.on_select = Some(Rc::new(move |s, date| cb(s, date)));
     }
@@ -388,13 +387,13 @@ impl<T: TimeZone, L: Locale + 'static> CalendarView<T, L> {
     /// Chainable variant.
     pub fn on_select<F>(self, cb: F) -> Self
     where
-        F: Fn(&mut Cursive, &Date<T>) + 'static,
+        F: Fn(&mut Cursive, &NaiveDate) + 'static,
     {
         self.with(|v| v.set_on_select(cb))
     }
 }
 
-impl<T: TimeZone, L: Locale + 'static> CalendarView<T, L> {
+impl<L: Locale + 'static> CalendarView<L> {
     fn draw_month(&self, printer: &Printer<'_, '_>) {
         let year = self.view_date.year();
         let month: Month = self.view_date.month0().into();
@@ -597,7 +596,7 @@ impl<T: TimeZone, L: Locale + 'static> CalendarView<T, L> {
         }
     }
 
-    fn date_available(&self, date: &Date<T>) -> bool {
+    fn date_available(&self, date: &NaiveDate) -> bool {
 
         let mut flag = false;
         for date in self.available_dates.iter().flat_map(|v| v.iter()) {
@@ -662,8 +661,6 @@ impl<T: TimeZone, L: Locale + 'static> CalendarView<T, L> {
     }
 
     fn submit(&mut self) -> EventResult
-    where
-        T: 'static,
     {
         if self.view_mode == self.lowest_view_mode {
             self.date = self.view_date.clone();
@@ -683,7 +680,7 @@ impl<T: TimeZone, L: Locale + 'static> CalendarView<T, L> {
     }
 }
 
-impl<T: TimeZone + 'static, L: Locale + 'static> View for CalendarView<T, L> {
+impl<L: Locale + 'static> View for CalendarView<L> {
     fn draw(&self, printer: &Printer<'_, '_>) {
         match self.view_mode {
             ViewMode::Month => self.draw_month(printer),
@@ -849,13 +846,13 @@ impl<T: TimeZone + 'static, L: Locale + 'static> View for CalendarView<T, L> {
 }
 
 // Helpers --------------------------------------------------------------------
-fn date_from_day_and_offsets<T: TimeZone>(
-    date: &Date<T>,
+fn date_from_day_and_offsets(
+    date: &NaiveDate,
     set_day: Option<i32>,
     day_offset: i32,
     month_offset: i32,
     year_offset: i32,
-) -> Option<Date<T>> {
+) -> Option<NaiveDate> {
     let mut year = date.year() + year_offset;
     let mut month = date.month0() as i32;
 
@@ -893,35 +890,3 @@ fn date_from_day_and_offsets<T: TimeZone>(
     }
 }
 
-#[test]
-fn test_offsets() {
-    let date = Utc.ymd(1969, 7, 20);
-
-    // Moon landing
-    assert_eq!(
-        Some(Utc.ymd(1969, 7, 20)),
-        date_from_day_and_offsets(&date, None, 0, 0, 0)
-    );
-
-    // Mission start
-    assert_eq!(
-        Some(Utc.ymd(1969, 7, 16)),
-        date_from_day_and_offsets(&date, None, -4, 0, 0)
-    );
-
-    // Mission end
-    assert_eq!(
-        Some(Utc.ymd(1969, 7, 24)),
-        date_from_day_and_offsets(&date, None, 4, 0, 0)
-    );
-
-    // Quarantine lifted
-    assert_eq!(
-        Some(Utc.ymd(1969, 8, 10)),
-        date_from_day_and_offsets(&date, None, 21, 0, 0)
-    );
-    assert_eq!(
-        Some(Utc.ymd(1969, 8, 10)),
-        date_from_day_and_offsets(&date, None, -10, 1, 0)
-    );
-}
