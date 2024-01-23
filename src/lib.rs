@@ -598,17 +598,12 @@ impl<L: Locale + 'static> CalendarView<L> {
 
     fn date_available(&self, date: &NaiveDate) -> bool {
 
-        let mut flag = false;
-        for date in self.available_dates.iter().flat_map(|v| v.iter()) {
-            if *date == *date {
-                flag = true;
+        if let Some(ref dates) = self.available_dates {
+            if !dates.contains(date) {
+            return false;
             }
         }
-
-        if !flag {
-            return false;
-        }
-        
+                
         if let Some(ref earliest) = self.earliest_date {
             if *date < *earliest {
                 return false;
