@@ -658,8 +658,10 @@ impl<L: Locale + 'static> CalendarView<L> {
     fn submit(&mut self) -> EventResult
     {
         if self.view_mode == self.lowest_view_mode {
+            if !self.date_available(&self.view_date) {
+                return EventResult::Ignored;
+            }
             self.date = self.view_date.clone();
-
             if self.on_submit.is_some() {
                 let cb = self.on_submit.clone().unwrap();
                 let date = self.date.clone();
@@ -703,27 +705,119 @@ impl<L: Locale + 'static> View for CalendarView<L> {
         }
 
         let last_view_date = self.view_date.clone();
+
         let offsets = match event {
-            Event::Key(Key::Up) => Some(match self.view_mode {
-                ViewMode::Month => (-7, 0, 0),
-                ViewMode::Year => (0, -4, 0),
-                ViewMode::Decade => (0, 0, -4),
-            }),
-            Event::Key(Key::Down) => Some(match self.view_mode {
-                ViewMode::Month => (7, 0, 0),
-                ViewMode::Year => (0, 4, 0),
-                ViewMode::Decade => (0, 0, 4),
-            }),
-            Event::Key(Key::Right) => Some(match self.view_mode {
-                ViewMode::Month => (1, 0, 0),
-                ViewMode::Year => (0, 1, 0),
-                ViewMode::Decade => (0, 0, 1),
-            }),
-            Event::Key(Key::Left) => Some(match self.view_mode {
-                ViewMode::Month => (-1, 0, 0),
-                ViewMode::Year => (0, -1, 0),
-                ViewMode::Decade => (0, 0, -1),
-            }),
+            Event::Key(Key::Up) => {
+                match self.view_mode {
+                    ViewMode::Month => {
+                        if self.available_dates.is_none() {
+                            Some((-7, 0, 0))
+                        }else{
+                            let mut date = self.view_date.clone();
+                            let mut offset = -7;
+                            while !self.date_available(&date) && offset < 0 {
+                                date = date_from_day_and_offsets(&self.view_date, None, offset, 0, 0).unwrap();
+                                offset += 1;
+                            }
+                            if offset == 0 {
+                                None
+                            } else {
+                                Some((offset, 0, 0))
+                            } 
+                        }
+                    },
+                    ViewMode::Year => Some((0, -4, 0)),
+                    ViewMode::Decade => Some((0, 0, -4)),
+                }
+            } 
+            Event::Key(Key::Down) => {
+                match self.view_mode {
+                    ViewMode::Month => {
+                        if self.available_dates.is_none() {
+                            Some((7, 0, 0))
+                        }else{
+                            let mut date = self.view_date.clone();
+                            let mut offset = 7;
+                            while !self.date_available(&date) && offset > 0 {
+                                date = date_from_day_and_offsets(&self.view_date, None, offset, 0, 0).unwrap();
+                                offset -= 1;
+                            }
+                            if offset == 0 {
+                                None
+                            } else {
+                                Some((offset, 0, 0))
+                            } 
+                        }
+                    },
+                    ViewMode::Year => Some((0, 4, 0)),
+                    ViewMode::Decade => Some((0, 0, 4)),
+                }
+            }
+            Event::Key(Key::Right) => {
+                match self.view_mode {
+                    ViewMode::Month => {
+                        if self.available_dates.is_none() {
+                            Some((1, 0, 0))
+                        }else{
+                            // Return closest available date
+                            let  date = self.view_date.clone();
+                            let mut closest_available_date = None;
+                            for available_date in self.available_dates.clone().unwrap() {
+                                if available_date > date {
+                                    if closest_available_date.is_none() || available_date < closest_available_date.unwrap() {
+                                        closest_available_date = Some(available_date);
+                                    }
+                                }
+                            }
+                            if let Some(closest_available_date) = closest_available_date {
+                                let offset = (closest_available_date - date).num_days() as i32;
+                                if offset == 0 {
+                                    None
+                                } else {
+                                    Some((-offset, 0, 0))
+                                }
+                            } else {
+                                None
+                            }
+                                                    
+                        }
+                    },
+                    ViewMode::Year => Some((0, 1, 0)),
+                    ViewMode::Decade => Some((0, 0, 1)),
+                }
+            }
+            Event::Key(Key::Left) => 
+                match self.view_mode {
+                    ViewMode::Month => {
+                        if self.available_dates.is_none() {
+                            Some((-1, 0, 0))
+                        }else{
+                            // Return closest available date
+                            let  date = self.view_date.clone();
+                            let mut closest_available_date = None;
+                            for available_date in self.available_dates.clone().unwrap() {
+                                if available_date < date {
+                                    if closest_available_date.is_none() || available_date > closest_available_date.unwrap() {
+                                        closest_available_date = Some(available_date);
+                                    }
+                                }
+                            }
+                            if let Some(closest_available_date) = closest_available_date {
+                                let offset = (closest_available_date - date).num_days() as i32;
+                                if offset == 0 {
+                                    None
+                                } else {
+                                    Some((offset, 0, 0))
+                                }
+                            } else {
+                                None
+                            }
+                                                    
+                        }
+                    },
+                    ViewMode::Year => Some((0, -1, 0)),
+                    ViewMode::Decade => Some((0, 0, -1)),
+                }
             Event::Key(Key::PageUp) => Some(match self.view_mode {
                 ViewMode::Month => (0, -1, 0),
                 ViewMode::Year => (0, 0, -1),
