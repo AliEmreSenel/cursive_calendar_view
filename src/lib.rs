@@ -845,11 +845,14 @@ impl<L: Locale + 'static> View for CalendarView<L> {
                         if self.available_dates.is_none() {
                             Some((0, -1, 0))
                         }else{
-                            let mut date = self.view_date.clone();
-                            date = date.with_day0(0).unwrap() - Duration::days(1);
+                            let date = self.view_date.clone();
+                            let mut prev_month = date.clone();
+                            while prev_month.month() == date.month() {
+                                prev_month = prev_month - Duration::days(1);
+                            }
                             let mut closest_available_date: Option<NaiveDate> = None;
                             for available_date in self.available_dates.clone().unwrap() {
-                                if &available_date <= &date {
+                                if &available_date <= &prev_month {
                                     if closest_available_date.is_none() || &available_date > closest_available_date.as_ref().unwrap(){
                                         closest_available_date = Some(available_date);
                                     }
