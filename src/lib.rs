@@ -721,7 +721,7 @@ impl<L: Locale + 'static> View for CalendarView<L> {
                             let date = self.view_date.clone();
                             let mut closest_available_date: Option<NaiveDate> = None;
                             for available_date in self.available_dates.clone().unwrap() {
-                                if &available_date < &(date - Duration::days(7)) {
+                                if &available_date <= &(date - Duration::days(7)) {
                                     if closest_available_date.is_none() || &available_date > closest_available_date.as_ref().unwrap(){
                                         closest_available_date = Some(available_date);
                                     }
@@ -752,7 +752,7 @@ impl<L: Locale + 'static> View for CalendarView<L> {
                             let date = self.view_date.clone();
                             let mut closest_available_date: Option<NaiveDate> = None;
                             for available_date in self.available_dates.clone().unwrap() {
-                                if &available_date > &(date + Duration::days(7)) {
+                                if &available_date >= &(date + Duration::days(7)) {
                                     if closest_available_date.is_none() || &available_date < closest_available_date.as_ref().unwrap(){
                                         closest_available_date = Some(available_date);
                                     }
