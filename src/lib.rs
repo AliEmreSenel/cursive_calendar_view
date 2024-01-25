@@ -715,8 +715,8 @@ impl<L: Locale + 'static> View for CalendarView<L> {
                         }else{
                             let mut date = self.view_date.clone();
                             let mut offset = -7;
-                            while !self.date_available(&date) && offset < 0 {
-                                date = date_from_day_and_offsets(&self.view_date, None, offset, 0, 0).unwrap();
+                            while !self.date_available(&date) && offset < -1 {
+                                date = date_from_day_and_offsets(&self.view_date, None, offset + 1, 0, 0).unwrap();
                                 offset += 1;
                             }
                             if offset == 0 {
@@ -738,8 +738,8 @@ impl<L: Locale + 'static> View for CalendarView<L> {
                         }else{
                             let mut date = self.view_date.clone();
                             let mut offset = 7;
-                            while !self.date_available(&date) && offset > 0 {
-                                date = date_from_day_and_offsets(&self.view_date, None, offset, 0, 0).unwrap();
+                            while !self.date_available(&date) && offset > 1 {
+                                date = date_from_day_and_offsets(&self.view_date, None, offset - 1, 0, 0).unwrap();
                                 offset -= 1;
                             }
                             if offset == 0 {
