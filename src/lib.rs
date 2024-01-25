@@ -761,10 +761,10 @@ impl<L: Locale + 'static> View for CalendarView<L> {
                         }else{
                             // Return closest available date
                             let  date = self.view_date.clone();
-                            let mut closest_available_date = None;
+                            let mut closest_available_date: Option<NaiveDate> = None;
                             for available_date in self.available_dates.clone().unwrap() {
-                                if available_date > date {
-                                    if closest_available_date.is_none() || available_date < closest_available_date.unwrap() {
+                                if &available_date > &date {
+                                    if closest_available_date.is_none() || &available_date < closest_available_date.as_ref().unwrap(){
                                         closest_available_date = Some(available_date);
                                     }
                                 }
@@ -774,7 +774,7 @@ impl<L: Locale + 'static> View for CalendarView<L> {
                                 if offset == 0 {
                                     None
                                 } else {
-                                    Some((-offset, 0, 0))
+                                    Some((offset, 0, 0))
                                 }
                             } else {
                                 None
@@ -794,10 +794,10 @@ impl<L: Locale + 'static> View for CalendarView<L> {
                         }else{
                             // Return closest available date
                             let  date = self.view_date.clone();
-                            let mut closest_available_date = None;
+                            let mut closest_available_date: Option<NaiveDate> = None;
                             for available_date in self.available_dates.clone().unwrap() {
-                                if available_date < date {
-                                    if closest_available_date.is_none() || available_date > closest_available_date.unwrap() {
+                                if &available_date < &date {
+                                    if closest_available_date.is_none() || &available_date > closest_available_date.as_ref().unwrap(){
                                         closest_available_date = Some(available_date);
                                     }
                                 }
@@ -807,7 +807,7 @@ impl<L: Locale + 'static> View for CalendarView<L> {
                                 if offset == 0 {
                                     None
                                 } else {
-                                    Some((offset, 0, 0))
+                                    Some((-offset, 0, 0))
                                 }
                             } else {
                                 None
