@@ -839,16 +839,71 @@ impl<L: Locale + 'static> View for CalendarView<L> {
                     ViewMode::Year => Some((0, -1, 0)),
                     ViewMode::Decade => Some((0, 0, -1)),
                 }
-            Event::Key(Key::PageUp) => Some(match self.view_mode {
-                ViewMode::Month => (0, -1, 0),
-                ViewMode::Year => (0, 0, -1),
-                ViewMode::Decade => (0, 0, -10),
-            }),
-            Event::Key(Key::PageDown) => Some(match self.view_mode {
-                ViewMode::Month => (0, 1, 0),
-                ViewMode::Year => (0, 0, 1),
-                ViewMode::Decade => (0, 0, 10),
-            }),
+            Event::Key(Key::PageUp) => 
+                match self.view_mode {
+                    ViewMode::Month => {
+                        if self.available_dates.is_none() {
+                            Some((0, -1, 0))
+                        }else{
+                            let mut date = self.view_date.clone();
+                            date = date.with_day0(0).unwrap() - Duration::days(1);
+                            let mut closest_available_date: Option<NaiveDate> = None;
+                            for available_date in self.available_dates.clone().unwrap() {
+                                if &available_date <= &date {
+                                    if closest_available_date.is_none() || &available_date > closest_available_date.as_ref().unwrap(){
+                                        closest_available_date = Some(available_date);
+                                    }
+                                }
+                            }
+                            if let Some(closest_available_date) = closest_available_date {
+                                let offset = (closest_available_date - date).num_days() as i32;
+                                if offset == 0 {
+                                    None
+                                } else {
+                                    Some((offset, 0, 0))
+                                }
+                            } else {
+                                None
+                            }
+                        }
+                    },
+                    ViewMode::Year => Some((0, 0, -1)),
+                    ViewMode::Decade => Some((0, 0, -10)),
+                }
+            Event::Key(Key::PageDown) => 
+                match self.view_mode {
+                    ViewMode::Month => {
+                        if self.available_dates.is_none() {
+                            Some((0, 1, 0))
+                        }else{
+                            let date = self.view_date.clone();
+                            let mut next_month = date.clone();
+                            while next_month.month() == date.month() {
+                                next_month = next_month + Duration::days(1);
+                            }
+                            let mut closest_available_date: Option<NaiveDate> = None;
+                            for available_date in self.available_dates.clone().unwrap() {
+                                if &available_date >= &next_month {
+                                    if closest_available_date.is_none() || &available_date < closest_available_date.as_ref().unwrap(){
+                                        closest_available_date = Some(available_date);
+                                    }
+                                }
+                            }
+                            if let Some(closest_available_date) = closest_available_date {
+                                let offset = (closest_available_date - date).num_days() as i32;
+                                if offset == 0 {
+                                    None
+                                } else {
+                                    Some((offset, 0, 0))
+                                }
+                            } else {
+                                None
+                            }
+                        }
+                    },
+                    ViewMode::Year => Some((0, 0, 1)),
+                    ViewMode::Decade => Some((0, 0, 10)),
+                }
             Event::Key(Key::Backspace) => {
                 if self.view_mode < self.highest_view_mode {
                     self.view_mode = match self.view_mode {
