@@ -54,6 +54,11 @@ pub enum ViewMode {
 /// This is an internal type used to improve readability.
 type DateCallback = Rc<dyn Fn(&mut Cursive, &NaiveDate)>;
 
+/// A callback taking a date as parameter.
+///
+/// This is an internal type used to improve readability.
+type SelectDateCallback = Rc<dyn Fn(&mut Cursive, &NaiveDate, &NaiveDate)>;
+
 /// View for selecting a date, supporting different modes for day, month or
 /// year based selection.
 ///
@@ -97,7 +102,7 @@ pub struct CalendarView<L: Locale> {
     available_dates: Option<Vec<NaiveDate>>,
     date: NaiveDate,
     on_submit: Option<DateCallback>,
-    on_select: Option<DateCallback>,
+    on_select: Option<SelectDateCallback>,
 
     size: Vec2,
 
@@ -377,9 +382,9 @@ impl<L: Locale + 'static> CalendarView<L> {
     /// Sets a callback to be used when an a new date is visually selected.
     pub fn set_on_select<F>(&mut self, cb: F)
     where
-        F: Fn(&mut Cursive, &NaiveDate) + 'static,
+        F: Fn(&mut Cursive, &NaiveDate, &NaiveDate) + 'static,
     {
-        self.on_select = Some(Rc::new(move |s, date| cb(s, date)));
+        self.on_select = Some(Rc::new(move |s, date, last_date| cb(s, date, last_date)));
     }
 
     /// Sets a callback to be used when an a new date is visually selected.
@@ -387,7 +392,7 @@ impl<L: Locale + 'static> CalendarView<L> {
     /// Chainable variant.
     pub fn on_select<F>(self, cb: F) -> Self
     where
-        F: Fn(&mut Cursive, &NaiveDate) + 'static,
+        F: Fn(&mut Cursive, &NaiveDate, &NaiveDate) + 'static,
     {
         self.with(|v| v.set_on_select(cb))
     }
@@ -928,7 +933,7 @@ impl<L: Locale + 'static> View for CalendarView<L> {
             EventResult::Consumed(
                 self.on_select
                     .clone()
-                    .map(|cb| Callback::from_fn(move |s| cb(s, &date))),
+                    .map(|cb| Callback::from_fn(move |s| cb(s, &date, &last_view_date))),
             )
         } else {
             EventResult::Consumed(None)
