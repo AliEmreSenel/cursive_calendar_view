@@ -18,7 +18,7 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 
 // External Dependencies ------------------------------------------------------
-use chrono::prelude::*;
+use chrono::{prelude::*, Duration};
 
 use crate::cursive::direction::Direction;
 use crate::cursive::event::{Callback, Event, EventResult, Key, MouseButton, MouseEvent};
@@ -718,16 +718,24 @@ impl<L: Locale + 'static> View for CalendarView<L> {
                         if self.available_dates.is_none() {
                             Some((-7, 0, 0))
                         }else{
-                            let mut date = self.view_date.clone();
-                            let mut offset = -7;
-                            while !self.date_available(&date) && offset < -1 {
-                                date = date_from_day_and_offsets(&self.view_date, None, offset + 1, 0, 0).unwrap();
-                                offset += 1;
+                            let date = self.view_date.clone();
+                            let mut closest_available_date: Option<NaiveDate> = None;
+                            for available_date in self.available_dates.clone().unwrap() {
+                                if &available_date < &(date - Duration::days(7)) {
+                                    if closest_available_date.is_none() || &available_date > closest_available_date.as_ref().unwrap(){
+                                        closest_available_date = Some(available_date);
+                                    }
+                                }
                             }
-                            if offset == 0 {
-                                None
+                            if let Some(closest_available_date) = closest_available_date {
+                                let offset = (closest_available_date - date).num_days() as i32;
+                                if offset == 0 {
+                                    None
+                                } else {
+                                    Some((offset, 0, 0))
+                                }
                             } else {
-                                Some((offset, 0, 0))
+                                None
                             } 
                         }
                     },
@@ -741,17 +749,25 @@ impl<L: Locale + 'static> View for CalendarView<L> {
                         if self.available_dates.is_none() {
                             Some((7, 0, 0))
                         }else{
-                            let mut date = self.view_date.clone();
-                            let mut offset = 7;
-                            while !self.date_available(&date) && offset > 1 {
-                                date = date_from_day_and_offsets(&self.view_date, None, offset - 1, 0, 0).unwrap();
-                                offset -= 1;
+                            let date = self.view_date.clone();
+                            let mut closest_available_date: Option<NaiveDate> = None;
+                            for available_date in self.available_dates.clone().unwrap() {
+                                if &available_date > &(date + Duration::days(7)) {
+                                    if closest_available_date.is_none() || &available_date < closest_available_date.as_ref().unwrap(){
+                                        closest_available_date = Some(available_date);
+                                    }
+                                }
                             }
-                            if offset == 0 {
-                                None
+                            if let Some(closest_available_date) = closest_available_date {
+                                let offset = (closest_available_date - date).num_days() as i32;
+                                if offset == 0 {
+                                    None
+                                } else {
+                                    Some((offset, 0, 0))
+                                }
                             } else {
-                                Some((offset, 0, 0))
-                            } 
+                                None
+                            }
                         }
                     },
                     ViewMode::Year => Some((0, 4, 0)),
