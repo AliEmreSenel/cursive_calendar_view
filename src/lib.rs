@@ -807,7 +807,7 @@ impl<L: Locale + 'static> View for CalendarView<L> {
                                 if offset == 0 {
                                     None
                                 } else {
-                                    Some((-offset, 0, 0))
+                                    Some((offset, 0, 0))
                                 }
                             } else {
                                 None
