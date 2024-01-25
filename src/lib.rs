@@ -917,7 +917,9 @@ impl<L: Locale + 'static> View for CalendarView<L> {
 
         if let Some((day, month, year)) = offsets {
             if let Some(date) = date_from_day_and_offsets(&last_view_date, None, day, month, year) {
-                self.set_view_date(date);
+                if self.date_available(&date) {
+                    self.set_view_date(date);
+                }
             }
         }
 
